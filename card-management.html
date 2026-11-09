@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card Management</title>
+<style>
+  :root{
+    --bg:#fff; --ink:#000; --mute:#8a8a86; --panel:#f3f2f0; --line:#e8e7e4; --warn:#b3261e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:"Neue Haas Grotesk","Helvetica Neue",Helvetica,Arial,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+    font-size:16px;line-height:1.25;letter-spacing:-.2px;
+  }
+  button,input,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+  button{background:none;border:0;cursor:pointer}
+  header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 20px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:var(--bg);z-index:5;
+  }
+  .logo{font-size:19px;letter-spacing:-.5px;line-height:1}
+  .nav{display:flex;gap:22px}
+  .nav button:hover,.link:hover{text-decoration:underline}
+  main{max-width:1280px;margin:0 auto;padding:0 20px 80px}
+  .title{text-align:center;padding:56px 0 36px}
+  .title small{display:block;font-size:15px;letter-spacing:0;margin-bottom:6px}
+  .title h2{font-size:32px;font-weight:400;letter-spacing:-1px}
+  .grid{padding-top:28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .card{display:flex;flex-direction:column;gap:14px}
+  .panel{background:var(--panel);padding:22px 22px 20px;display:flex;flex-direction:column;gap:18px;min-height:250px}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .name{font-size:19px;letter-spacing:-.5px}
+  .info{font-size:13px;color:var(--mute);margin-top:4px;white-space:pre-wrap}
+  .edit{font-size:13px;color:var(--mute);flex:none}
+  .edit:hover{color:var(--ink)}
+  .panel{transition:background .2s}
+  .panel.warn{background:#f1e4c4}
+  .panel.full{background:#ecc9c4}
+  .alert{font-size:13px;padding:8px 10px;background:rgba(255,255,255,.7)}
+  .full .alert{color:var(--warn)}
+  .topup{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+  .topup button{border:1px solid var(--ink);padding:8px 14px;background:transparent}
+  .topup button:hover:not(:disabled){background:var(--ink);color:#fff}
+  .topup button:disabled{opacity:.35;cursor:not-allowed}
+  .rec .a.plus::before{content:"+"}
+  .top.hero{
+    margin:-22px -22px 0;padding:20px 22px;min-height:160px;color:#fff;position:relative;
+    background-size:cover;background-position:center;align-items:flex-end;
+  }
+  .top.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55),rgba(0,0,0,.05) 70%)}
+  .top.hero>*{position:relative}
+  .top.hero .info,.top.hero .edit{color:rgba(255,255,255,.85)}
+  .top.hero .edit{align-self:flex-start;margin-top:-4px}
+  .top.hero .edit:hover{color:#fff}
+  #imgPrev{display:none;align-items:center;gap:12px;margin:-6px 0 14px}
+  #imgPrev.on{display:flex}
+  #imgPrev i{width:96px;height:56px;background-size:cover;background-position:center;display:block}
+  #imgPrev button{font-size:13px;color:var(--warn)}
+  .big{font-size:44px;letter-spacing:-2px;line-height:1}
+  .big.neg{color:var(--warn)}
+  .lbl{font-size:12px;color:var(--mute);margin-bottom:6px}
+  .bar{height:2px;background:#d9d8d4;position:relative}
+  .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink);display:block}
+  .bar.neg i{background:var(--warn)}
+  .stats{display:flex;justify-content:space-between;font-size:13px}
+  .stats span{color:var(--mute)}
+  form.add{display:flex;gap:8px;margin-top:auto}
+  form.add input{
+    min-width:0;background:#fff;border:1px solid transparent;padding:10px 12px;outline:0;
+  }
+  form.add input:focus{border-color:var(--ink)}
+  form.add input[name=amt]{flex:1.4 1 100px}
+  form.add input[name=note]{flex:1 1 70px}
+  form.add button{background:var(--ink);color:#fff;padding:0 16px;flex:none}
+  form.add button:hover{opacity:.8}
+  details{font-size:14px;border-top:1px solid var(--line);padding-top:10px}
+  summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";font-size:16px;line-height:1}
+  details[open] summary::after{content:"−"}
+  .recs{margin-top:10px;display:flex;flex-direction:column}
+  .rec{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);align-items:baseline}
+  .rec:last-child{border-bottom:0}
+  .rec .d{color:var(--mute);width:78px;flex:none;font-variant-numeric:tabular-nums}
+  .rec .n{flex:1;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rec .a{font-variant-numeric:tabular-nums}
+  .rec button{color:var(--mute);font-size:13px}
+  .rec button:hover{color:var(--warn)}
+  .empty{color:var(--mute);padding:6px 0}
+  .prev{margin-top:2px;font-size:13px;color:var(--mute);display:flex;justify-content:space-between}
+  .prev b{font-weight:400;color:var(--ink)}
+  .blank{grid-column:1/-1;text-align:center;color:var(--mute);padding:60px 0}
+  footer{border-top:1px solid var(--line);margin-top:70px;padding-top:18px;display:flex;gap:22px;font-size:13px;color:var(--mute)}
+  footer button{color:inherit}
+  footer button:hover{color:var(--ink)}
+  dialog{
+    margin:auto;border:0;padding:28px;width:min(420px,calc(100vw - 32px));
+    background:#fff;box-shadow:0 0 0 1px var(--line),0 20px 60px rgba(0,0,0,.15);
+  }
+  dialog::backdrop{background:rgba(255,255,255,.75)}
+  dialog h3{font-size:22px;font-weight:400;letter-spacing:-.8px;margin-bottom:20px}
+  dialog label{display:block;font-size:12px;color:var(--mute);margin-bottom:14px}
+  dialog input,dialog textarea{
+    display:block;width:100%;margin-top:5px;background:var(--panel);border:1px solid transparent;
+    padding:10px 12px;outline:0;color:var(--ink);font-size:16px;resize:vertical;
+  }
+  dialog input:focus,dialog textarea:focus{border-color:var(--ink)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+  .actions .r{display:flex;gap:18px;align-items:center}
+  .primary{background:var(--ink);color:#fff;padding:10px 22px}
+  .primary:hover{opacity:.8}
+  .danger{color:var(--warn);font-size:14px}
+  @media (max-width:520px){.title{padding:40px 0 26px}.title h2{font-size:28px}.big{font-size:38px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Card<br>Management</div>
+  <div class="nav"><button id="addBtn">新增卡片 +</button></div>
+</header>
+
+<main>
+  <div class="grid" id="grid"></div>
+  <footer>
+    <button id="exportBtn">匯出備份</button>
+    <button id="importBtn">匯入備份</button>
+    <input type="file" id="file" accept="application/json" hidden>
+  </footer>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog" id="cardForm">
+    <h3 id="dlgTitle">新增卡片</h3>
+    <label>名稱<input name="name" required maxlength="40" placeholder="例：國泰 悠遊聯名卡"></label>
+    <label>卡片資訊<textarea name="info" rows="2" maxlength="200" placeholder="例：自動加值回饋 3%，每月上限 300 點"></textarea></label>
+    <label>卡片圖片（填滿名稱區，選填）<input type="file" id="imgFile" accept="image/*"></label>
+    <div id="imgPrev"><i></i><button type="button" id="imgClear">移除圖片</button></div>
+    <div class="row2">
+      <label>初始餘額（當次儲值剩餘）<input name="initial" type="number" inputmode="decimal" min="0" step="any" required></label>
+      <label>每月重置日（1–31）<input name="reset" type="number" inputmode="numeric" min="1" max="31" step="1" required></label>
+      <label>單次儲值金額<input name="topup" type="number" inputmode="decimal" min="1" step="any" required></label>
+      <label>福利額度（每月）<input name="benefit" type="number" inputmode="decimal" min="1" step="any" required></label>
+    </div>
+    <div class="actions">
+      <button type="button" class="danger" id="delBtn">刪除卡片</button>
+      <div class="r"><button type="button" class="link" id="cancelBtn">取消</button><button class="primary" type="submit">儲存</button></div>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const KEY = 'card-mgmt-v1';
+  let cards = [];
+  try { cards = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) {}
+  const norm = () => cards.forEach(c => { if (!(c.topup > 0)) c.topup = 500; if (!(c.benefit > 0)) c.benefit = 2000; });
+  norm();
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cards)); } catch (e) {} };
+
+  // ---- date helpers (all keyed as local "YYYY-MM-DD" strings) ----
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const dim = (y, m) => new Date(y, m + 1, 0).getDate();
+  // start (reset day on/before date d) of the cycle containing d; reset days beyond month length clamp to month end
+  function cycleStart(resetDay, d) {
+    let y = d.getFullYear(), m = d.getMonth();
+    let s = new Date(y, m, Math.min(resetDay, dim(y, m)));
+    if (s > d) { m--; if (m < 0) { m = 11; y--; } s = new Date(y, m, Math.min(resetDay, dim(y, m))); }
+    return s;
+  }
+  function nextReset(resetDay, start) {
+    let y = start.getFullYear(), m = start.getMonth() + 1;
+    if (m > 11) { m = 0; y++; }
+    return new Date(y, m, Math.min(resetDay, dim(y, m)));
+  }
+  const fmt = n => (Math.round(n * 100) / 100).toLocaleString('en-US');
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const short = s => s.slice(5).replace('-', '/');
+
+  function summarize(c) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const start = cycleStart(c.reset, today);
+    const sKey = iso(start), end = nextReset(c.reset, start);
+    const prevStart = cycleStart(c.reset, new Date(start.getFullYear(), start.getMonth(), start.getDate() - 1));
+    const pKey = iso(prevStart);
+    // Replay in order: balance = what's left of the current top-up; when a spend overdraws it, auto top-up (+c.topup) until >= 0.
+    const cur = [], prev = [];
+    let balance = c.initial, pBalance = c.initial, spent = 0, pSpent = 0, topCount = 0, pTop = 0;
+    const ordered = [...c.records].sort((a, b) => a.date.localeCompare(b.date) || a.ts - b.ts);
+    for (const r of ordered) {
+      let n = 0;
+      if (r.type === 'topup') { balance += r.amount; n = 1; } // legacy manual top-up records
+      else {
+        balance -= r.amount;
+        while (balance < 0) { balance += c.topup; n++; }
+      }
+      const view = { ...r, auto: r.type === 'topup' ? 0 : n };
+      if (r.date >= sKey) { cur.push(view); topCount += n; if (r.type !== 'topup') spent += r.amount; }
+      else {
+        pBalance = balance;
+        if (r.date >= pKey) { prev.push(view); pTop += n; if (r.type !== 'topup') pSpent += r.amount; }
+      }
+    }
+    const max = Math.floor(c.benefit / c.topup + 1e-9);
+    const level = max > 0 && topCount >= max ? 2 : (max > 0 && topCount >= max - 1 ? 1 : 0);
+    const sorted = [...cur].sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts);
+    return { sKey, end: iso(end), pKey, spent, balance, pSpent, pBalance, pCount: prev.length, pTop, topCount, max, level, cur: sorted };
+  }
+
+  // ---- render ----
+  const grid = document.getElementById('grid');
+  const openState = new Set(); // keep <details> open across re-renders
+  function render() {
+    if (!cards.length) { grid.innerHTML = '<div class="blank">尚無卡片，點右上角「新增卡片」開始。</div>'; return; }
+    grid.innerHTML = cards.map(c => {
+      const s = summarize(c);
+      const pct = s.max > 0 ? Math.min(100, s.topCount / s.max * 100) : 0;
+      const neg = s.balance < 0;
+      const cls = s.level === 2 ? 'full' : s.level === 1 ? 'warn' : '';
+      const msg = s.level === 2 ? '已達福利上限，本月不再使用' : s.level === 1 ? '⚠ 即將達福利上限，再儲值 1 次即達上限' : '額度充足，可盡情使用';
+      const recs = s.cur.length
+        ? s.cur.map(r => `<div class="rec"><span class="d">${short(r.date)}</span><span class="n">${r.type === 'topup' ? '儲值　' : ''}${r.auto ? `自動儲值 ×${r.auto}　` : ''}${esc(r.note || '')}</span><span class="a ${r.type === 'topup' ? 'plus' : ''}">${fmt(r.amount)}</span><button data-del="${r.id}" title="刪除">✕</button></div>`).join('')
+        : '<div class="empty">本期尚無消費記錄</div>';
+      return `<section class="card" data-id="${c.id}">
+        <div class="panel ${cls}">
+          <div class="top ${c.img ? 'hero' : ''}" ${c.img ? `style="background-image:url('${c.img}')"` : ''}>
+            <div><div class="name">${esc(c.name)}</div>${c.info ? `<div class="info">${esc(c.info)}</div>` : ''}</div>
+            <button class="edit" data-edit>編輯</button>
+          </div>
+          <div>
+            <div class="lbl">目前餘額${neg ? '（透支）' : ''}</div>
+            <div class="big ${neg ? 'neg' : ''}">${fmt(s.balance)}</div>
+          </div>
+          <div class="bar ${neg ? 'neg' : ''}"><i style="width:${pct}%"></i></div>
+          <div class="stats"><div><span>當月累計消費　</span>${fmt(s.spent)}</div><div><span>已儲值　</span>${s.topCount} / ${s.max} 次</div></div>
+          <div class="stats"><div><span>本期 ${short(s.sKey)} 起　下次重置　</span>${short(s.end)}</div><div><span>福利　</span>${fmt(s.topCount * c.topup)} / ${fmt(c.benefit)}</div></div>
+          <div class="alert">${msg}</div>
+          <div class="stats"><div><span>單次儲值　</span>${fmt(c.topup)}</div><div><span>餘額不足時自動儲值</span></div></div>
+          <form class="add" autocomplete="off">
+            <input name="amt" type="number" inputmode="decimal" step="any" min="0" placeholder="消費金額" required>
+            <input name="note" type="text" maxlength="40" placeholder="備註">
+            <button>記帳</button>
+          </form>
+        </div>
+        <details ${openState.has(c.id) ? 'open' : ''}>
+          <summary>消費記錄（${s.cur.length}）</summary>
+          <div class="recs">${recs}</div>
+        </details>
+        <div class="prev"><span>上期（${short(s.pKey)} 起）期末餘額　<b>${fmt(s.pBalance)}</b></span><span>消費 ${fmt(s.pSpent)}・儲值 ${s.pTop} 次</span></div>
+      </section>`;
+    }).join('');
+  }
+
+  // ---- events ----
+  grid.addEventListener('submit', e => {
+    e.preventDefault();
+    const form = e.target, id = form.closest('.card').dataset.id;
+    const c = cards.find(x => x.id === id);
+    const amt = parseFloat(form.amt.value);
+    if (!c || !(amt > 0)) return;
+    c.records.push({ id: uid(), ts: Date.now(), date: iso(new Date()), amount: amt, note: form.note.value.trim() });
+    save(); render();
+    const f = grid.querySelector(`[data-id="${id}"] input[name=amt]`); if (f) f.focus();
+  });
+  grid.addEventListener('click', e => {
+    const card = e.target.closest('.card'); if (!card) return;
+    const c = cards.find(x => x.id === card.dataset.id);
+    if (e.target.matches('[data-edit]')) openDialog(c);
+    const del = e.target.closest('[data-del]');
+    if (del && confirm('刪除這筆消費記錄？')) { c.records = c.records.filter(r => r.id !== del.dataset.del); save(); render(); }
+  });
+  grid.addEventListener('toggle', e => {
+    const card = e.target.closest && e.target.closest('.card'); if (!card) return;
+    e.target.open ? openState.add(card.dataset.id) : openState.delete(card.dataset.id);
+  }, true);
+
+  // ---- dialog ----
+  const dlg = document.getElementById('dlg'), form = document.getElementById('cardForm');
+  let editing = null, pendingImg; // pendingImg: undefined = unchanged, '' = removed, string = new
+  const imgFile = document.getElementById('imgFile'), imgPrev = document.getElementById('imgPrev');
+  function showPrev() {
+    const cur = pendingImg !== undefined ? pendingImg : (editing && editing.img) || '';
+    imgPrev.classList.toggle('on', !!cur);
+    imgPrev.querySelector('i').style.backgroundImage = cur ? `url('${cur}')` : '';
+  }
+  imgFile.onchange = () => {
+    const f = imgFile.files[0]; if (!f) return;
+    const url = URL.createObjectURL(f), im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 900 / im.width), cv = document.createElement('canvas');
+      cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      pendingImg = cv.toDataURL('image/jpeg', 0.82); URL.revokeObjectURL(url); showPrev();
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); alert('無法讀取這個圖片'); };
+    im.src = url;
+  };
+  document.getElementById('imgClear').onclick = () => { pendingImg = ''; imgFile.value = ''; showPrev(); };
+  function openDialog(c) {
+    editing = c || null; pendingImg = undefined; imgFile.value = ''; showPrev();
+    document.getElementById('dlgTitle').textContent = c ? '編輯卡片' : '新增卡片';
+    document.getElementById('delBtn').style.visibility = c ? 'visible' : 'hidden';
+    form.name.value = c ? c.name : ''; form.info.value = c ? c.info : '';
+    form.initial.value = c ? c.initial : ''; form.reset.value = c ? c.reset : 1;
+    form.topup.value = c ? c.topup : 500; form.benefit.value = c ? c.benefit : 2000;
+    dlg.showModal(); form.name.focus();
+  }
+  document.getElementById('addBtn').onclick = () => openDialog();
+  document.getElementById('cancelBtn').onclick = () => dlg.close();
+  document.getElementById('delBtn').onclick = () => {
+    if (editing && confirm(`刪除「${editing.name}」及其所有記錄？此動作無法復原。`)) {
+      cards = cards.filter(x => x !== editing); save(); dlg.close(); render();
+    }
+  };
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const v = {
+      name: form.name.value.trim(), info: form.info.value.trim(),
+      initial: parseFloat(form.initial.value), topup: parseFloat(form.topup.value) || 500, benefit: parseFloat(form.benefit.value) || 2000, reset: Math.min(31, Math.max(1, parseInt(form.reset.value, 10) || 1))
+    };
+    if (!v.name || isNaN(v.initial)) return;
+    if (pendingImg !== undefined) v.img = pendingImg;
+    if (editing) Object.assign(editing, v); else cards.push({ id: uid(), ...v, records: [] });
+    save(); dlg.close(); render();
+  });
+
+  // ---- backup ----
+  document.getElementById('exportBtn').onclick = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(cards, null, 2)], { type: 'application/json' }));
+    a.download = `cards-${iso(new Date())}.json`; a.click(); URL.revokeObjectURL(a.href);
+  };
+  const file = document.getElementById('file');
+  document.getElementById('importBtn').onclick = () => file.click();
+  file.onchange = async () => {
+    try {
+      const data = JSON.parse(await file.files[0].text());
+      if (!Array.isArray(data) || !data.every(c => c.id && c.name && Array.isArray(c.records))) throw 0;
+      if (confirm('匯入將覆蓋目前所有資料，繼續？')) { cards = data; norm(); save(); render(); }
+    } catch (e) { alert('檔案格式不正確'); }
+    file.value = '';
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
